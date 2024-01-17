@@ -109,7 +109,6 @@ class Iterast(FileSystemEventHandler):
         if module not in self._globals:
             return
 
-        print('hit')
         importlib.reload(self._globals[module])
 
     def reset(self, exception=False):
