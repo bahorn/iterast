@@ -5,13 +5,30 @@ can keep your REPL alive for longer.
 import ast
 import time
 import os
+import sys
+import importlib
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileModifiedEvent
 from logger import get_logger
 
 BASE_GLOBAL = globals()
+MODULE_PATH = sys.path
 
 logger = get_logger()
+
+
+class FindImports(ast.NodeVisitor):
+    def __init__(self):
+        self._modules = []
+
+    def modules(self):
+        return self._modules
+
+    def visit_Import(self, node):
+        self._modules += list(map(lambda x: x.name, node.names))
+
+    def visit_ImportFrom(self, node):
+        self._modules.append(node.module)
 
 
 class Iterast(FileSystemEventHandler):
@@ -19,18 +36,36 @@ class Iterast(FileSystemEventHandler):
         self._filename = filename
         self._copies = []
         self._globals = None
+        self._module_files = []
         super().__init__()
 
-    def reload(self):
+        self.reload()
+
+    def reload(self, reeval=False):
         with open(self._filename) as f:
-            self._copies.append(ast.parse(f.read()))
-            self._copies = self._copies[-2:]
-        if len(self._copies) == 1:
-            self.evaluate(True, map(ast.unparse, self._copies[0].body))
+            parsed = ast.parse(f.read())
+
+        # extracting the modules from the file
+        self._modules = Iterast.find_module_paths(parsed)
+
+        self._copies.append(parsed)
+        self._copies = self._copies[-2:]
+
+        if len(self._copies) == 1 or reeval:
+            self.reset()
+            self.evaluate(map(ast.unparse, self._copies[-1].body))
             return
 
         reset, code = Iterast.get_actions(self._copies[0], self._copies[1])
-        self.evaluate(reset, map(ast.unparse, code))
+        if reset:
+            self.reset()
+        self.evaluate(map(ast.unparse, code))
+
+    @staticmethod
+    def find_module_paths(ast):
+        fi = FindImports()
+        fi.visit(ast)
+        return fi.modules()
 
     @staticmethod
     def get_actions(ap, bp):
@@ -66,14 +101,26 @@ class Iterast(FileSystemEventHandler):
         """
         return ast.unparse(a) != ast.unparse(b)
 
-    def reset(self):
-        self._globals = BASE_GLOBAL.copy()
+    def reload_module(self, module):
+        logger.info(f'[reload] {module}')
+        if not module and module in self._globals:
+            return
+
+        if module not in self._globals:
+            return
+
+        print('hit')
+        importlib.reload(self._globals[module])
+
+    def reset(self, exception=False):
         logger.info('[reset]')
+        if exception:
+            return
+        self._globals = BASE_GLOBAL.copy()
+        self._globals['sys'].path = [os.path.dirname(self._filename)] + \
+            MODULE_PATH
 
-    def evaluate(self, reset, code):
-        if reset:
-            self.reset()
-
+    def evaluate(self, code):
         for line in code:
             line_str = line.split('\n')[0][:80]
             logger.info(f'[eval] {line_str}')
@@ -81,22 +128,25 @@ class Iterast(FileSystemEventHandler):
                 exec(line, self._globals)
             except Exception as e:
                 logger.error(f'[Exception] {e}')
-                self.reset()
+                self.reset(exception=True)
                 break
 
     def dispatch(self, event):
-        if not isinstance(event, FileModifiedEvent):
-            return
-        if event.src_path != self._filename:
-            return
-        self.reload()
+        match event:
+            case FileModifiedEvent():
+                basename = os.path.basename(event.src_path).split('.')[0]
+                if event.src_path == self._filename:
+                    self.reload()
+                elif basename in self._modules:
+                    self.reload_module(basename)
+                    self.reload(reeval=True)
+
 
 
 def iterast_start(user_path):
     filename = os.path.abspath(user_path)
 
     event_handler = Iterast(filename)
-    event_handler.reload()
 
     observer = Observer()
     observer.schedule(event_handler, os.path.dirname(filename))
