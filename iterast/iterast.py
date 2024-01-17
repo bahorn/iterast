@@ -14,11 +14,12 @@ BASE_GLOBAL = globals()
 logger = get_logger()
 
 
-class Iterast:
+class Iterast(FileSystemEventHandler):
     def __init__(self, filename):
         self._filename = filename
         self._copies = []
         self._globals = None
+        super().__init__()
 
     def reload(self):
         with open(self._filename) as f:
@@ -83,27 +84,19 @@ class Iterast:
                 self.reset()
                 break
 
-
-class Watcher(FileSystemEventHandler):
-    def __init__(self, filename, iterast):
-        self._filename = filename
-        self._iterast = iterast
-        super().__init__()
-
     def dispatch(self, event):
         if not isinstance(event, FileModifiedEvent):
             return
         if event.src_path != self._filename:
             return
-        self._iterast.reload()
+        self.reload()
 
 
 def iterast_start(user_path):
     filename = os.path.abspath(user_path)
-    iterast = Iterast(filename)
-    iterast.reload()
 
-    event_handler = Watcher(filename, iterast)
+    event_handler = Iterast(filename)
+    event_handler.reload()
 
     observer = Observer()
     observer.schedule(event_handler, os.path.dirname(filename))
