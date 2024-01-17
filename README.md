@@ -6,6 +6,8 @@ So basically its a REPL that reads from a file.
 
 Evaluates the code in process!
 
+[Video demo](https://youtu.be/FjP6IyULLFQ)
+
 ## Usage
 
 Setup:
