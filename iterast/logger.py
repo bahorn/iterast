@@ -1,6 +1,7 @@
 import logging
 
-
+# From:
+# https://stackoverflow.com/a/56944256
 class CustomFormatter(logging.Formatter):
 
     grey = "\x1b[38;20m"
