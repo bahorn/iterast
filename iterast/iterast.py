@@ -119,6 +119,7 @@ class Iterast(FileSystemEventHandler):
         if error:
             return
         self._globals = BASE_GLOBAL.copy()
+        self._globals['__name__'] = '__main__'
         self._globals['sys'].path = [os.path.dirname(self._filename)] + \
             MODULE_PATH
 
