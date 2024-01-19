@@ -20,6 +20,8 @@ Run like so:
 python3 iterast.py ./path/to/file.py
 ```
 
+Optional flag is `--no-clear`, which will disable clearing the screen on reset.
+
 ## License
 
 MIT

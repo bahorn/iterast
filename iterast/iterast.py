@@ -32,11 +32,12 @@ class FindImports(ast.NodeVisitor):
 
 
 class Iterast(FileSystemEventHandler):
-    def __init__(self, filename):
+    def __init__(self, filename, clear=True):
         self._filename = filename
         self._copies = []
         self._globals = None
         self._module_files = []
+        self._clear = clear
         super().__init__()
 
         self.reload()
@@ -112,6 +113,8 @@ class Iterast(FileSystemEventHandler):
         importlib.reload(self._globals[module])
 
     def reset(self, exception=False):
+        if self._clear:
+            os.system('cls' if os.name == 'nt' else 'clear')
         logger.info('[reset]')
         if exception:
             return
@@ -142,10 +145,10 @@ class Iterast(FileSystemEventHandler):
 
 
 
-def iterast_start(user_path):
+def iterast_start(user_path, clear):
     filename = os.path.abspath(user_path)
 
-    event_handler = Iterast(filename)
+    event_handler = Iterast(filename, clear=clear)
 
     observer = Observer()
     observer.schedule(event_handler, os.path.dirname(filename))
