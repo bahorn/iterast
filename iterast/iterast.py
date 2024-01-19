@@ -7,6 +7,7 @@ import time
 import os
 import sys
 import importlib
+import signal
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileModifiedEvent
 from logger import get_logger
@@ -145,12 +146,16 @@ class Iterast(FileSystemEventHandler):
                     self.reload(reeval=True)
 
 
-
 def iterast_start(user_path, clear):
     filename = os.path.abspath(user_path)
     os.chdir(os.path.dirname(filename))
 
     event_handler = Iterast(filename, clear=clear)
+
+    def signal_handler(sig, frame):
+        event_handler.reload(True)
+
+    signal.signal(signal.SIGQUIT, signal_handler)
 
     observer = Observer()
     observer.schedule(event_handler, os.path.dirname(filename))

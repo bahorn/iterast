@@ -22,6 +22,9 @@ python3 iterast.py ./path/to/file.py
 
 Optional flag is `--no-clear`, which will disable clearing the screen on reset.
 
+You can trigger a reload with a `SIGQUIT`, which you can send by pressing
+`CTRL+\`
+
 ## License
 
 MIT
