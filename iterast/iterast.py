@@ -130,7 +130,7 @@ class Iterast(FileSystemEventHandler):
                 exec(line, self._globals)
             except Exception as e:
                 logger.error(f'[Exception] {e}')
-                self.reset(exception=True)
+                self.reset(error=True)
                 break
 
     def dispatch(self, event):
