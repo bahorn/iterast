@@ -112,11 +112,11 @@ class Iterast(FileSystemEventHandler):
 
         importlib.reload(self._globals[module])
 
-    def reset(self, exception=False):
-        if self._clear:
+    def reset(self, error=False):
+        if self._clear and not error:
             os.system('cls' if os.name == 'nt' else 'clear')
         logger.info('[reset]')
-        if exception:
+        if error:
             return
         self._globals = BASE_GLOBAL.copy()
         self._globals['sys'].path = [os.path.dirname(self._filename)] + \
@@ -147,6 +147,7 @@ class Iterast(FileSystemEventHandler):
 
 def iterast_start(user_path, clear):
     filename = os.path.abspath(user_path)
+    os.chdir(os.path.dirname(filename))
 
     event_handler = Iterast(filename, clear=clear)
 
