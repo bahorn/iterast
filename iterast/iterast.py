@@ -8,6 +8,7 @@ import os
 import sys
 import importlib
 import signal
+import traceback
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileModifiedEvent
 from logger import get_logger
@@ -136,6 +137,7 @@ class Iterast(FileSystemEventHandler):
                 exec(line, self._globals)
             except Exception as e:
                 logger.error(f'[Exception] {e}')
+                logger.error(traceback.format_exc())
                 self.reset(error=True)
                 break
 
