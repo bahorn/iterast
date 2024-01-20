@@ -45,8 +45,12 @@ class Iterast(FileSystemEventHandler):
 
     def reload(self, reeval=False):
         with open(self._filename) as f:
-            parsed = ast.parse(f.read())
-
+            try:
+                parsed = ast.parse(f.read())
+            except Exception as e:
+                logger.error(e)
+                self.reset(error=True)
+                return
         # extracting the modules from the file
         self._modules = Iterast.find_module_paths(parsed)
 
